@@ -4,8 +4,8 @@
   "logCatches": true,
   "lowIVLog": "10.00",
   "highIVLog": "85.00",
-  "logWebhook": "WEBHOOK TO LOG CATCHES",
-  "ownerID": [ "ID OF MAIN ACCOUNT", "..." ],
+  "logWebhook": "https://discord.com/api/webhooks/1086648453360275508/QvrUX6JHzzf_ZjNGyTcO_eBcqFu7P03dggFqlZH7_dzeK7L_jrC7DZHUGVcVC7oSIYUM",
+  "ownerID": [ "1132699173209243679", "..." ],
   "prefix": "!",
   "globalCatch": false,
   "blacklistedGuilds": [ "716390832034414685", "..." ]
