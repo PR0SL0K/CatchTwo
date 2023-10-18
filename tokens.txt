@@ -1,2 +1,2 @@
-Token1 guildId1
+Token1 guildId1 MTE2MzgyMzk4NTMwNjM3MDA0OA.GCOn_Y.COp5i5Xu4Wjw6Q9p1Tf8QTq7ZLoySf_Ieo0zqc
 Token2 guildId2
