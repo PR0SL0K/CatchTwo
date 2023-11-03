@@ -1,5 +1,5 @@
-var version = "1.3.1";
-// Version 1.3.1
+var version = "1.3.5";
+// Version 1.3.5
 // EVERYTHING can be set up in config.json, no need to change anything here :)!
 
 const { Client, Permissions } = require("discord.js-selfbot-v13");
@@ -47,7 +47,7 @@ axios
               v +
               "\nPlease update.                         " +
               chalk.underline("\nhttps://github.com/kyan0045/catchtwo") +
-              "   "
+              `\nRun "git pull https://github.com/kyan0045/catchtwo" to update.`
           )
         );
 
@@ -62,6 +62,9 @@ axios
                 v +
                 "**\nPlease update: " +
                 "https://github.com/kyan0045/CatchTwo"
+            )
+            .setFooter(
+              `Run "git pull https://github.com/kyan0045/catchtwo" to update.`
             )
             .setColor("#E74C3C")
         );
@@ -78,20 +81,22 @@ if (!data) throw new Error(`Unable to find your tokens.`);
 const tokensAndGuildIds = data.split(/\s+/);
 config.tokens = [];
 
-if (tokensAndGuildIds.length % 2 !== 0) {
+/* if (tokensAndGuildIds.length % 2 !== 0) {
   if (!process.env.TOKENS)
     throw new Error(
       `Invalid number of tokens and guild IDs, please check if ./tokens.txt has an empty line, and if so, remove it.`
     );
   throw new Error(`Invalid number of tokens and guild IDs.`);
-}
+} */
 
 for (let i = 0; i < tokensAndGuildIds.length; i += 2) {
-  const token = tokensAndGuildIds[i].trim();
-  const guildId = tokensAndGuildIds[i + 1].trim();
+  if (tokensAndGuildIds[i + 1]) {
+    const token = tokensAndGuildIds[i].trim();
+    const guildId = tokensAndGuildIds[i + 1].trim();
 
-  if (token && guildId) {
-    config.tokens.push({ token, guildId });
+    if (token && guildId) {
+      config.tokens.push({ token, guildId });
+    }
   }
 }
 
@@ -141,6 +146,9 @@ async function Login(token, Client, guildId) {
       console.log(`Logged in to ` + chalk.red(client.user.tag) + `!`);
       client.user.setStatus("invisible");
       accountCheck = client.user.username;
+      spamMessages = fs
+        .readFileSync(__dirname + "/messages/messages.txt", "utf-8")
+        .split("\n");
 
       async function interval(intervals) {
         if (!isOnBreak && !captcha) {
@@ -165,17 +173,16 @@ async function Login(token, Client, guildId) {
             }
 
             spamChannel = spamChannels.random()*/
-            const spamMessages = fs
-              .readFileSync(__dirname + "/messages/messages.txt", "utf-8")
-              .split("\n");
             const spamMessage =
               spamMessages[Math.floor(Math.random() * spamMessages.length)];
 
-            await spamChannel.send(spamMessage);
-            spamMessageCount++;
+            if (spamMessage?.length > 0) {
+              await spamChannel.send(spamMessage);
+              spamMessageCount++;
+            }
           }
 
-          if (randomInteger(0, 1700) === 400) {
+          if (randomInteger(0, 2500) === 400 && config.sleeping) {
             let sleepTimeInMilliseconds = randomInteger(600000, 4000000);
             isOnBreak = true;
 
@@ -266,11 +273,11 @@ async function Login(token, Client, guildId) {
 
       spamChannel.send("<@716390085896962058> i");
 
-      intervals = Math.floor(Math.random() * (5000 - 2000 + 1)) + 2000;
+      intervals = Math.floor(Math.random() * (5000 - 1500 + 1)) + 1500;
       setInterval(() => interval(intervals), intervals);
 
       setInterval(() => {
-        intervals = Math.floor(Math.random() * (5000 - 2000 + 1)) + 2000;
+        intervals = Math.floor(Math.random() * (5000 - 1500 + 1)) + 1500;
       }, 15000);
 
       startTime = Date.now();
@@ -292,19 +299,17 @@ async function Login(token, Client, guildId) {
       [...messages.values()];
 
       if (
-        message.embeds[0]?.title &&
-        message.embeds[0].title.includes("wild pokémon has appeared")
+        message.embeds[0]?.title?.includes("wild pokémon has appeared") &&
+        !captcha
       ) {
         if (
           config.incenseMode == false &&
-          message.embeds[0]?.footer &&
-          message.embeds[0].footer.text.includes("Incense")
+          message.embeds[0]?.footer?.text?.includes("Incense")
         )
           return;
         if (
           config.incenseMode == true &&
-          message.embeds[0]?.footer &&
-          message.embeds[0].footer.text.includes("Incense")
+          message.embeds[0]?.footer?.text?.includes("Incense")
         ) {
           if (isOnBreak == false) {
             isOnBreak = true;
@@ -336,10 +341,33 @@ async function Login(token, Client, guildId) {
           "<@716390085896962058> " + hintMessages[Math.round(Math.random())]
         );
         spawned_embed = message.embeds[0];
-      } else if (message.content.includes("The pokémon is")) {
+      } else if (message.content.includes("The pokémon is") && !captcha) {
         const pokemon = await solveHint(message);
-        if (pokemon) {
-          await message.channel.send("<@716390085896962058> c " + pokemon);
+        if (pokemon[0]) {
+          await sleep(300);
+          await message.channel.send("<@716390085896962058> c " + pokemon[0]);
+          checkIfWrong = await message.channel
+            .createMessageCollector({ time: 5000 })
+            .on("collect", async (msg) => {
+              if (msg.content.includes("That is the wrong pokémon!")) {
+                checkIfWrong.stop();
+                await msg.channel.send("<@716390085896962058> c " + pokemon[1]);
+
+                checkIfWrong2 = await msg.channel
+                  .createMessageCollector({ time: 5000 })
+                  .on("collect", async (msg) => {
+                    if (msg.content.includes("That is the wrong pokémon!")) {
+                      checkIfWrong2.stop();
+                      let hintMessages = ["h", "hint"];
+                      msg.channel.send(
+                        "<@716390085896962058> " +
+                          hintMessages[Math.round(Math.random())]
+                      );
+                    }
+                  });
+              }
+            });
+
           await sleep(5000);
           if (config.reactAfterCatch) {
             const caughtMessages = fs
@@ -347,7 +375,9 @@ async function Login(token, Client, guildId) {
               .split("\n");
             const caughtMessage =
               caughtMessages[Math.floor(Math.random() * caughtMessages.length)];
-            message.channel.send(caughtMessage);
+            if (caughtMessage?.length > 0) {
+              message.channel.send(caughtMessage);
+            }
           }
         } else {
           const words = message.content.split(" ");
@@ -363,17 +393,19 @@ async function Login(token, Client, guildId) {
               `: Could not identify ` +
               lastWord
           );
+          await sleep(8000)
+          let hintMessages = ["h", "hint"];
+          message.channel.send(
+            "<@716390085896962058> " + hintMessages[Math.round(Math.random())]
+          );
         }
-      } else if (message.content.includes("That is the wrong pokémon!")) {
-        await sleep(8000);
-        message.channel.send("<@716390085896962058> h");
       } else if (
         message.content.includes("Congratulations <@" + client.user.id + ">")
       ) {
         pokemonCount++;
-
-        await sleep(2000);
-        message.channel.send("<@716390085896962058> i l");
+        if (config.logCatches) {
+          message.channel.send("<@716390085896962058> i l");
+        }
       } else if (
         message.embeds[0]?.footer &&
         message.embeds[0].footer.text.includes("Displaying") &&
@@ -915,6 +947,26 @@ async function Login(token, Client, guildId) {
             .setDescription("**Account: **" + client.user.tag)
             .setColor("#FF5600")
         );
+      } else if (
+        config.autoSatchel &&
+        message.content?.includes("You found a") &&
+        message.content?.includes("Satchel") &&
+        (newMessage[0].content?.includes(client.user.id) ||
+          newMessage[1].content?.includes(client.user.id))
+      ) {
+        if (message.content.includes("Flames")) {
+          await sleep(4000);
+          message.channel.send("<@716390085896962058> ev open flames");
+        } else if (message.content.includes("Shadows")) {
+          await sleep(4000);
+          message.channel.send("<@716390085896962058> ev open shadows");
+        } else if (message.content.includes("Foliage")) {
+          await sleep(4000);
+          message.channel.send("<@716390085896962058> ev open foliage");
+        } else if (message.content.includes("Snaring")) {
+          await sleep(4000);
+          message.channel.send("<@716390085896962058> ev open snaring");
+        }
       }
     }
 
@@ -1935,44 +1987,13 @@ async function Login(token, Client, guildId) {
             message.react("✅");
 
             const messages = [
-              "<@716390085896962058>p --n rayquaza --hpiv >23 --atkiv >10 --defiv >23 --spdiv 31",
-              "<@716390085896962058>p --n eternatus --hpiv >25 --defiv >26 --spatkiv >20 --spdefiv >27 --spdiv 31",
-              "<@716390085896962058>p --n groudon --hpiv >23 --atkiv >17 --defiv >17 --spdefiv >26 --spdiv >28",
-              "<@716390085896962058>p --n kyogre --hpiv >25 --defiv >26 --spatkiv >10 --spdiv 31",
-              "<@716390085896962058>p --n dialga --hpiv >15 --spatkiv >19 --spdefiv >18 --spdiv >28",
-              "<@716390085896962058>p --n regigigas --hpiv >10 --atkiv >6 --defiv >6 --spdefiv >11 --spdiv 31",
-              "<@716390085896962058>p --n arceus --hpiv >15 --defiv >16 --spatkiv >20 --spdiv >28",
-              "<@716390085896962058>p --n yveltal --hpiv >23 --atkiv >13 --defiv >9 --spdefiv >17 --spdiv 31",
-              "<@716390085896962058>p --n yveltal --hpiv >23 --atkiv >24 --defiv >23 --spdefiv >17 --spdiv >13",
-              "<@716390085896962058>p --n xerneas --hpiv >15 --atkiv >26 --spdefiv >15 --spdiv >28",
-              "<@716390085896962058>p --n giratina --hpiv >25 --defiv >25 --spdiv >28",
-              "<@716390085896962058>p --n mewtwo --hpiv >24 --defiv >25 --spatkiv >9 --spdiv >28",
-              "<@716390085896962058> p --n Coalossal --n Carkol --n Rolycoly --hp >24 --atk >28 --def >28 --spdef >28 --spatk >28 --spdiv 31",
-              "<@716390085896962058> p --n Slaking --n Vigoroth --n Slakoth --hp >24 --atk >28 --def >28 --spdiv 31",
-              "<@716390085896962058> p --n Metagross --n Metang --atk >28 --spdiv 31",
-              "<@716390085896962058> p --n Braviary --n Rufflet --hp >24 --atk >28 --spdiv 31",
-              "<@716390085896962058> p --n Primarina --n Brionne --n Popplio --hp >24 --spdef >28 --spdiv 31",
-              "<@716390085896962058> p --n Golisopod --n Wimpod --atk >28 --def >28 --spdiv 31",
-              "<@716390085896962058> p --n Gyarados --n Magikarp --atk >28 --def >28 --spdef >28 --spdiv 31",
-              "<@716390085896962058> p --n Dragonite --n Dragonair --n Dratini --atk >28 --spatk >28 --spdiv 31",
-              "<@716390085896962058> p --n Salamence --n Shelgon --n Bagon --atk >28 --def >28 --spdiv 31",
-              "<@716390085896962058> p --n Skuntank --n Stunky --hp >24 --atk >28 --spdiv 31",
-              "<@716390085896962058> p --n Garchomp --n Gabite --hp >24 --atk >28 --spdiv 31",
-              "<@716390085896962058> p --n Mega Garchomp --hp >24 --atk >28 --spdiv 31",
-              "<@716390085896962058> p --n Delphox --n Braixen --n Fennekin --spatk >28 --spdef >28 --spdiv 31",
-              "<@716390085896962058> p --n Decidueye --n Dartrix --n Rowlet --atk >28 --spatk >28 --spdef >28 --spdiv 31",
-              "<@716390085896962058> p --n Dragapult --n Drakloak --atk >28 --spdiv 31",
-              "<@716390085896962058> p --n Gardevoir --n Kirlia --atk >28 --spdef >28 --spdiv 31",
-              "<@716390085896962058> p --n Gengar --n Haunter --atk >28 --spatk >28 --spdiv 31",
-              "<@716390085896962058> p --n Aerodactyl --atk >28 --def >28 --spdiv 31",
-              "<@716390085896962058> p --n Scizor --atk >28 --def >28 --spdef >28",
-              "<@716390085896962058> p --n Blaziken --atk >28 --spdiv 31",
-              "<@716390085896962058> p --n Swampert --atk >28 --def >28 --spdef >28",
-              "<@716390085896962058> p --n Lucario --n Riolu --atk >28 --spatk >28 --spdiv 31",
-              "<@716390085896962058> p --n Gallade --n Kirlia --atk >28 --spdef >28 --spdiv 31",
-              "<@716390085896962058>p --n larvitar --n pupitar --n tyranitar --hpiv >20 --atkiv >25 --defiv >15 --spdefiv >20",
-              "<@716390085896962058>p --n froakie --n frogadier --n greninja --atkiv >14 --spatkiv >23 --spdiv >27",
-              "<@716390085896962058>p --n axew --n fraxure --n haxorus --hpiv >24 --atkiv >23 --spdefiv >24",
+              "<@716390085896962058> p --leg --myt --ub --spdiv 31 --atk >20 --hp >10",
+              "<@716390085896962058> p --leg --myt --ub --spdiv 31 --spatk >20 --hp >10",
+              "<@716390085896962058> p --leg --myt --ub --iv >70 --spdiv 31",
+              "<@716390085896962058> p  --spdiv 31 --atk >20 --def >15 --hp >10",
+              "<@716390085896962058> p  --spdiv 31 --spatk >20 --spdef >15 --hp >10",
+              "<@716390085896962058> p  --triple 31",
+              "<@716390085896962058> p  --iv >90",
             ];
 
             let counter = 0;
@@ -1993,12 +2014,17 @@ async function Login(token, Client, guildId) {
             console.error(err);
             message.react("❌");
           }
-        } //Duel Command Contribution by ViwesBot :3
+        } //Duel Command Contribution by ViwesBot/Akshad :3
       }
     }
   });
 
   client.on(`rateLimit`, async (message) => {
+    console.log(
+      `${chalk.redBright(
+        "[RATELIMIT]"
+      )} Your IP has been ratelimited by Discord.`
+    );
     let rateLimitPauses = [`900000`, `1000000`, `1100000`, `1200000`];
 
     let rateLimitPause =
@@ -2006,11 +2032,12 @@ async function Login(token, Client, guildId) {
 
     await sleep(rateLimitPause);
   });
-  try {
-    client.login(token, (bot = false));
-  } catch (err) {
-    throw new Error(`Unable to login to token ${token}`);
-  }
+
+  client.login(token).catch((err) => {
+    console.log(
+      `${chalk.redBright("[ERROR]")} Invalid token ${chalk.red(token)}`
+    );
+  });
 }
 
 start();

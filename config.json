@@ -1,4 +1,5 @@
 {
+  "sleeping": true,
   "incenseMode": false,
   "reactAfterCatch": false,
   "logCatches": true,
@@ -8,5 +9,6 @@
   "ownerID": [ "1132699173209243679", "..." ],
   "prefix": "!",
   "globalCatch": false,
-  "blacklistedGuilds": [ "716390832034414685", "..." ]
+  "blacklistedGuilds": [ "716390832034414685", "..." ],
+  "autoSatchel": true
 }
